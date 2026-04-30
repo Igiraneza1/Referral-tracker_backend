@@ -1,0 +1,40 @@
+# dependencies
+node_modules/
+
+# logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# environment variables
+.env
+.env.*
+!.env.example
+
+# build output
+dist/
+build/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE/editor folders
+.vscode/
+.idea/
+
+# temporary files
+*.tmp
+*.temp
+
+# coverage reports
+coverage/
+
+# package lock (optional, usually KEEP this)
+# package-lock.json
+
+# misc
+*.pid
+*.seed

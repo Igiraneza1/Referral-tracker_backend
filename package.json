@@ -19,6 +19,12 @@
   },
   "homepage": "https://github.com/Igiraneza1/Referral-tracker_backend#readme",
   "dependencies": {
+    "dotenv": "^17.4.2",
     "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.3"
   }
 }

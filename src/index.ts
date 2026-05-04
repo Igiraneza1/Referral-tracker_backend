@@ -1,12 +1,28 @@
 import express = require('express');
+import pool from './database.js';
+
 const app = express();
 const PORT = 3000;
-// Middleware to parse JSON request bodies
+
 app.use(express.json());
-app.post('/data', (req, res) => {
-   console.log(req.body); // Parsed JSON object
-   res.send({ received: true, data: req.body });
+
+// Test database connection
+app.get('/health', async (req, res) => {
+  try {
+    await pool.query('SELECT NOW()');
+    res.json({ 
+      status: 'OK', 
+      message: 'Database connected successfully',
+      timestamp: new Date()
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      status: 'ERROR', 
+      message: 'Database connection failed' 
+    });
+  }
 });
+
 app.listen(PORT, () => {
-   console.log(`Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });

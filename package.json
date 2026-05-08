@@ -4,7 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node dist/index.js",
+    "dev": "nodemon src/index.ts",
+    "build": "tsc"
   },
   "repository": {
     "type": "git",
@@ -13,7 +16,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "module",
+  "type": "commonjs",
   "bugs": {
     "url": "https://github.com/Igiraneza1/Referral-tracker_backend/issues"
   },
@@ -21,11 +24,14 @@
   "dependencies": {
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "pg": "^8.20.0"
+    "pg": "^8.20.0",
+    "sequelize": "^6.37.8"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
+    "@types/node": "^25.6.2",
     "@types/pg": "^8.20.0",
+    "nodemon": "^3.1.14",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.3"
   }

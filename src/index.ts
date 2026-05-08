@@ -1,28 +1,21 @@
-import express = require('express');
-import pool from './database.js';
-
+import express from 'express';
+import sequelize from './config/database';
 const app = express();
-const PORT = 3000;
-
+const PORT = process.env.PORT || 5000;
 app.use(express.json());
-
-// Test database connection
-app.get('/health', async (req, res) => {
+app.get('/health', (req, res) => {
+  res.json({ status: 'OK', message: 'Server is running' });
+});
+const connectAndStart = async () => {
   try {
-    await pool.query('SELECT NOW()');
-    res.json({ 
-      status: 'OK', 
-      message: 'Database connected successfully',
-      timestamp: new Date()
+    await sequelize.authenticate();
+    console.log('Database connected successfully');
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
     });
   } catch (error) {
-    res.status(500).json({ 
-      status: 'ERROR', 
-      message: 'Database connection failed' 
-    });
+    console.error('Database connection failed:', error);
+    process.exit(1);
   }
-});
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+};
+connectAndStart();

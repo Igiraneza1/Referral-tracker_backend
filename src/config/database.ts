@@ -1,4 +1,3 @@
-
 import { Sequelize } from 'sequelize';
 import dotenv from 'dotenv';
 
@@ -11,7 +10,7 @@ const sequelize = new Sequelize({
   host: process.env.DB_HOST!,
   port: Number(process.env.DB_PORT!),
   dialect: 'postgres',
-  logging: false,
+  logging: console.log,
 });
 
 export default sequelize;

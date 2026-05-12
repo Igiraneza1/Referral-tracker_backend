@@ -1,4 +1,4 @@
-import { DataTypes, Model } from 'sequelize';
+import { DataTypes, Model, Optional } from 'sequelize';
 import sequelize from '../config/database';
 
 interface ReferralAttributes {
@@ -13,7 +13,11 @@ interface ReferralAttributes {
   referralDate: Date;
 }
 
-class Referral extends Model<ReferralAttributes> implements ReferralAttributes {
+interface ReferralCreationAttributes
+  extends Optional<ReferralAttributes, 'id' | 'status' | 'notes'> {}
+
+class Referral extends Model<ReferralAttributes, ReferralCreationAttributes>
+  implements ReferralAttributes {
   public id!: number;
   public patientId!: string;
   public patientName!: string;
@@ -38,7 +42,7 @@ Referral.init(
     receivingFacility: { type: DataTypes.STRING, allowNull: false },
     reason: { type: DataTypes.TEXT, allowNull: false },
     status: {
-      type: DataTypes.ENUM('pending', 'accepted', 'attended', 'feedback_received','closed'),
+      type: DataTypes.ENUM('pending', 'accepted', 'attended', 'feedback_received', 'closed'),
       allowNull: false,
       defaultValue: 'pending',
     },
@@ -51,4 +55,5 @@ Referral.init(
     timestamps: true,
   }
 );
+
 export default Referral;

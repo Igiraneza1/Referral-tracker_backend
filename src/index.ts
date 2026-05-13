@@ -1,6 +1,8 @@
 import express from 'express';
 import sequelize from './config/database';
 import Referral from './models/Referral';
+// import swaggerUi from 'swagger-ui-express';
+// import swaggerSpec from './config/swagger';
 
 const _models = { Referral };
 
@@ -8,6 +10,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(express.json());
+// app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', message: 'Server is running' });

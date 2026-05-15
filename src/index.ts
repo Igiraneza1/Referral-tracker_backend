@@ -1,15 +1,19 @@
 import express from 'express';
 import sequelize from './config/database';
 import Referral from './models/Referral';
-import referralRoutes from './routes/referralRoutes'; // ADD THIS
+import User from './models/User';
+import authRoutes from './routes/authRoutes';
 
-const _models = { Referral };
+import referralRoutes from './routes/referralRoutes'; 
+
+const _models = { Referral, User };
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(express.json());
-app.use('/api/referrals', referralRoutes); // ADD THIS
+app.use('/api/referrals', referralRoutes); 
+app.use('/api/auth', authRoutes);
 
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', message: 'Server is running' });

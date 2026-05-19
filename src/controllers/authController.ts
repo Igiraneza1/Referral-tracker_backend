@@ -57,10 +57,10 @@ export const register = async (req: Request, res: Response) => {
 
 export const login = async (req: Request, res: Response) => {
   try {
-    const { email, password } = req.body;
+    const { username, password } = req.body;
 
     const user = await User.findOne({
-      where: { email },
+      where: { username },
     });
 
     if (!user) {
@@ -89,7 +89,7 @@ export const login = async (req: Request, res: Response) => {
         role: user.role,
         facility: user.facility,
       },
-      process.env.JWT_SECRET as string,
+      process.env.JWT as string,
       {
         expiresIn: '7d',
       }

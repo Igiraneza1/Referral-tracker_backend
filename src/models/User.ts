@@ -1,6 +1,6 @@
 import { DataTypes, Model, Optional } from 'sequelize';
 import sequelize from '../config/database';
-// 1. All fields with TypeScript types
+
 interface UserAttributes {
   id: number;
   fullName: string;

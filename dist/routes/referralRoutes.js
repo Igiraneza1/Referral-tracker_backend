@@ -1,0 +1,13 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const referralController_1 = require("../controllers/referralController");
+const validateReferral_1 = require("../middleware/validateReferral");
+const authenticate_1 = require("../middleware/authenticate");
+const authorize_1 = require("../middleware/authorize");
+const router = (0, express_1.Router)();
+router.get('/', authenticate_1.authenticate, referralController_1.getAllReferrals);
+router.get('/:id', authenticate_1.authenticate, referralController_1.getReferralById);
+router.post('/', authenticate_1.authenticate, (0, authorize_1.authorize)('REFERRAL_OFFICER', 'FACILITY_ADMIN', 'ADMIN', 'DEVELOPER'), validateReferral_1.validateReferral, referralController_1.createReferral);
+router.patch('/:id/status', authenticate_1.authenticate, (0, authorize_1.authorize)('REFERRAL_OFFICER', 'FACILITY_ADMIN', 'ADMIN', 'DEVELOPER'), referralController_1.updateReferralStatus);
+exports.default = router;

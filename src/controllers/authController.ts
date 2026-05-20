@@ -3,22 +3,28 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { Op } from 'sequelize';
 import User from '../models/User';
+import { AuthRequest } from '../middleware/authenticate';
 
-// CREATE ACCOUNT
+// PUBLIC REGISTER
+// only creates REFERRAL_OFFICER and VIEWER
 export const register = async (req: Request, res: Response) => {
   try {
     const { fullName, username, email, password, role, facility } = req.body;
 
+    // only these two roles can self register
+    const allowedPublicRoles = ['REFERRAL_OFFICER', 'VIEWER'];
+    if (!allowedPublicRoles.includes(role)) {
+      return res.status(403).json({
+        message: 'You cannot self register with this role. Contact your administrator.',
+      });
+    }
+
     const existingUser = await User.findOne({
-      where: {
-        [Op.or]: [{ email }, { username }],
-      },
+      where: { [Op.or]: [{ email }, { username }] },
     });
 
     if (existingUser) {
-      return res.status(400).json({
-        message: 'User already exists',
-      });
+      return res.status(400).json({ message: 'User already exists' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -32,55 +38,112 @@ export const register = async (req: Request, res: Response) => {
       facility,
     });
 
-    const userData = {
-      id: user.id,
-      fullName: user.fullName,
-      username: user.username,
-      email: user.email,
-      role: user.role,
-      facility: user.facility,
-      isActive: user.isActive,
-    };
-
     return res.status(201).json({
-      message: 'User created successfully',
-      user: userData,
+      message: 'Account created successfully',
+      user: {
+        id: user.id,
+        fullName: user.fullName,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        facility: user.facility,
+        isActive: user.isActive,
+      },
     });
   } catch (error) {
     console.error(error);
-
-    return res.status(500).json({
-      message: 'Server error',
-    });
+    return res.status(500).json({ message: 'Server error' });
   }
 };
 
+// PROTECTED CREATE USER
+// ADMIN + DEVELOPER → can create any role
+// FACILITY_ADMIN    → can only create REFERRAL_OFFICER for their facility
+export const createUser = async (req: AuthRequest, res: Response) => {
+  try {
+    const { fullName, username, email, password, role, facility } = req.body;
+    const requestingUser = req.user;
+
+    if (!requestingUser) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+
+    // FACILITY_ADMIN rules
+    if (requestingUser.role === 'FACILITY_ADMIN') {
+
+      // can only create REFERRAL_OFFICER
+      if (role !== 'REFERRAL_OFFICER') {
+        return res.status(403).json({
+          message: 'Facility Admin can only create Referral Officer accounts',
+        });
+      }
+
+      // can only create users for their own facility
+      if (facility !== requestingUser.facility) {
+        return res.status(403).json({
+          message: 'You can only create users for your own facility',
+        });
+      }
+    }
+
+    // ADMIN + DEVELOPER can create any role — no extra checks needed
+
+    const existingUser = await User.findOne({
+      where: { [Op.or]: [{ email }, { username }] },
+    });
+
+    if (existingUser) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = await User.create({
+      fullName,
+      username,
+      email,
+      password: hashedPassword,
+      role,
+      facility,
+    });
+
+    return res.status(201).json({
+      message: 'User created successfully',
+      user: {
+        id: user.id,
+        fullName: user.fullName,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        facility: user.facility,
+        isActive: user.isActive,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// LOGIN
 export const login = async (req: Request, res: Response) => {
   try {
     const { username, password } = req.body;
 
-    const user = await User.findOne({
-      where: { username },
-    });
+    const user = await User.findOne({ where: { username } });
 
     if (!user) {
-      return res.status(401).json({
-        message: 'Invalid credentials',
-      });
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
-      return res.status(401).json({
-        message: 'Invalid credentials',
-      });
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     if (!user.isActive) {
-      return res.status(403).json({
-        message: 'Account deactivated',
-      });
+      return res.status(403).json({ message: 'Account deactivated' });
     }
 
     const token = jwt.sign(
@@ -89,21 +152,24 @@ export const login = async (req: Request, res: Response) => {
         role: user.role,
         facility: user.facility,
       },
-      process.env.JWT as string,
-      {
-        expiresIn: '7d',
-      }
+      process.env.JWT_SECRET as string,
+      { expiresIn: '7d' }
     );
 
     return res.status(200).json({
       message: 'Login successful',
       token,
+      user: {
+        id: user.id,
+        fullName: user.fullName,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        facility: user.facility,
+      },
     });
   } catch (error) {
     console.error(error);
-
-    return res.status(500).json({
-      message: 'Server error',
-    });
+    return res.status(500).json({ message: 'Server error' });
   }
 };

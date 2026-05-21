@@ -5,13 +5,10 @@ import { Op } from 'sequelize';
 import User from '../models/User';
 import { AuthRequest } from '../middleware/authenticate';
 
-// PUBLIC REGISTER
-// only creates REFERRAL_OFFICER and VIEWER
 export const register = async (req: Request, res: Response) => {
   try {
     const { fullName, username, email, password, role, facility } = req.body;
 
-    // only these two roles can self register
     const allowedPublicRoles = ['REFERRAL_OFFICER', 'VIEWER'];
     if (!allowedPublicRoles.includes(role)) {
       return res.status(403).json({
@@ -56,9 +53,6 @@ export const register = async (req: Request, res: Response) => {
   }
 };
 
-// PROTECTED CREATE USER
-// ADMIN + DEVELOPER → can create any role
-// FACILITY_ADMIN    → can only create REFERRAL_OFFICER for their facility
 export const createUser = async (req: AuthRequest, res: Response) => {
   try {
     const { fullName, username, email, password, role, facility } = req.body;
@@ -68,25 +62,20 @@ export const createUser = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ message: 'Not authenticated' });
     }
 
-    // FACILITY_ADMIN rules
     if (requestingUser.role === 'FACILITY_ADMIN') {
 
-      // can only create REFERRAL_OFFICER
       if (role !== 'REFERRAL_OFFICER') {
         return res.status(403).json({
           message: 'Facility Admin can only create Referral Officer accounts',
         });
       }
 
-      // can only create users for their own facility
       if (facility !== requestingUser.facility) {
         return res.status(403).json({
           message: 'You can only create users for your own facility',
         });
       }
     }
-
-    // ADMIN + DEVELOPER can create any role — no extra checks needed
 
     const existingUser = await User.findOne({
       where: { [Op.or]: [{ email }, { username }] },

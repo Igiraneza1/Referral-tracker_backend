@@ -37,4 +37,4 @@ coverage/
 
 # misc
 *.pid
-*.seed
+.seed

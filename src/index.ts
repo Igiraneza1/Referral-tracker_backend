@@ -7,6 +7,7 @@ import User from './models/User';
 
 import authRoutes from './routes/authRoutes';
 import referralRoutes from './routes/referralRoutes';
+import userRoutes from './routes/userRoutes';
 
 const _models = { Referral, User };
 
@@ -21,9 +22,9 @@ app.use(cors({
 
 app.use(express.json());
 
-// Routes
 app.use('/api/referrals', referralRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 
 app.get('/health', (req, res) => {
   res.json({

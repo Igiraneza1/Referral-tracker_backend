@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import { validationResult } from 'express-validator';
+import { Op } from 'sequelize';
 import Referral from '../models/Referral';
 import { AuthRequest } from '../middleware/authenticate';
 
@@ -10,7 +11,6 @@ const VALID_STATUSES = [
   'feedback_received',
   'closed',
 ];
-
 
 export const createReferral = async (req: AuthRequest, res: Response) => {
   try {
@@ -57,7 +57,6 @@ export const createReferral = async (req: AuthRequest, res: Response) => {
   }
 };
 
-
 export const getAllReferrals = async (req: AuthRequest, res: Response) => {
   try {
     const requestingUser = req.user;
@@ -67,20 +66,22 @@ export const getAllReferrals = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ message: 'Not authenticated' });
     }
 
-    if (requestingUser.role === 'FACILITY_ADMIN') {
+    if (
+      requestingUser.role === 'FACILITY_ADMIN' ||
+      requestingUser.role === 'REFERRAL_OFFICER'
+    ) {
 
       referrals = await Referral.findAll({
-        where: { referringFacility: requestingUser.facility },
-        order: [['createdAt', 'DESC']],
-      });
-    } else if (requestingUser.role === 'REFERRAL_OFFICER') {
-      // sees referrals TO their facility
-      referrals = await Referral.findAll({
-        where: { receivingFacility: requestingUser.facility },
+        where: {
+          [Op.or]: [
+            { referringFacility: requestingUser.facility },
+            { receivingFacility: requestingUser.facility },
+          ],
+        },
         order: [['createdAt', 'DESC']],
       });
     } else {
-
+      // ADMIN, DEVELOPER, VIEWER see everything
       referrals = await Referral.findAll({
         order: [['createdAt', 'DESC']],
       });
@@ -110,15 +111,9 @@ export const getReferralById = async (req: AuthRequest, res: Response) => {
     }
 
     if (
-      requestingUser?.role === 'FACILITY_ADMIN' &&
-      referral.referringFacility !== requestingUser.facility
-    ) {
-      res.status(403).json({ message: 'Access denied' });
-      return;
-    }
-
-    if (
-      requestingUser?.role === 'REFERRAL_OFFICER' &&
+      (requestingUser?.role === 'FACILITY_ADMIN' ||
+        requestingUser?.role === 'REFERRAL_OFFICER') &&
+      referral.referringFacility !== requestingUser.facility &&
       referral.receivingFacility !== requestingUser.facility
     ) {
       res.status(403).json({ message: 'Access denied' });
@@ -155,16 +150,9 @@ export const updateReferralStatus = async (req: AuthRequest, res: Response) => {
     }
 
     if (
-      requestingUser?.role === 'FACILITY_ADMIN' &&
-      referral.referringFacility !== requestingUser.facility
-    ) {
-      res.status(403).json({ message: 'Access denied' });
-      return;
-    }
-
-    // REFERRAL_OFFICER can only update referrals to their facility
-    if (
-      requestingUser?.role === 'REFERRAL_OFFICER' &&
+      (requestingUser?.role === 'FACILITY_ADMIN' ||
+        requestingUser?.role === 'REFERRAL_OFFICER') &&
+      referral.referringFacility !== requestingUser.facility &&
       referral.receivingFacility !== requestingUser.facility
     ) {
       res.status(403).json({ message: 'Access denied' });

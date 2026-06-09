@@ -11,10 +11,11 @@ interface ReferralAttributes {
   status: 'pending' | 'accepted' | 'attended' | 'feedback_received' | 'closed';
   notes?: string;
   referralDate: Date;
+  createdBy: string;
 }
 
 interface ReferralCreationAttributes
-  extends Optional<ReferralAttributes, 'id' | 'status' | 'notes'> {}
+  extends Optional<ReferralAttributes, 'id' | 'status' | 'notes' | 'createdBy'> {}
 
 class Referral extends Model<ReferralAttributes, ReferralCreationAttributes>
   implements ReferralAttributes {
@@ -27,6 +28,7 @@ class Referral extends Model<ReferralAttributes, ReferralCreationAttributes>
   public status!: 'pending' | 'accepted' | 'attended' | 'feedback_received' | 'closed';
   public notes?: string;
   public referralDate!: Date;
+  public createdBy!: string;
 }
 
 Referral.init(
@@ -48,6 +50,7 @@ Referral.init(
     },
     notes: { type: DataTypes.TEXT, allowNull: true },
     referralDate: { type: DataTypes.DATEONLY, allowNull: false },
+    createdBy: { type: DataTypes.STRING, allowNull: true },
   },
   {
     sequelize,

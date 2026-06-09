@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { validationResult } from 'express-validator';
 import { Op } from 'sequelize';
 import Referral from '../models/Referral';
+import User from '../models/User';
 import { AuthRequest } from '../middleware/authenticate';
 
 const VALID_STATUSES = [
@@ -12,6 +13,7 @@ const VALID_STATUSES = [
   'closed',
 ];
 
+// CREATE REFERRAL
 export const createReferral = async (req: AuthRequest, res: Response) => {
   try {
     const errors = validationResult(req);
@@ -32,6 +34,7 @@ export const createReferral = async (req: AuthRequest, res: Response) => {
       referralDate,
     } = req.body;
 
+    // FACILITY_ADMIN can only create referrals from their facility
     if (
       requestingUser?.role === 'FACILITY_ADMIN' &&
       referringFacility !== requestingUser.facility
@@ -41,6 +44,10 @@ export const createReferral = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // get full name of logged in user
+    const user = await User.findByPk(requestingUser?.id);
+    const createdBy = user?.fullName || 'Unknown';
+
     const referral = await Referral.create({
       patientId,
       patientName,
@@ -49,6 +56,7 @@ export const createReferral = async (req: AuthRequest, res: Response) => {
       reason,
       notes,
       referralDate,
+      createdBy,
     });
 
     res.status(201).json(referral);
@@ -57,6 +65,7 @@ export const createReferral = async (req: AuthRequest, res: Response) => {
   }
 };
 
+// GET ALL REFERRALS
 export const getAllReferrals = async (req: AuthRequest, res: Response) => {
   try {
     const requestingUser = req.user;
@@ -70,7 +79,7 @@ export const getAllReferrals = async (req: AuthRequest, res: Response) => {
       requestingUser.role === 'FACILITY_ADMIN' ||
       requestingUser.role === 'REFERRAL_OFFICER'
     ) {
-
+      // sees referrals FROM their facility AND TO their facility
       referrals = await Referral.findAll({
         where: {
           [Op.or]: [
@@ -93,6 +102,7 @@ export const getAllReferrals = async (req: AuthRequest, res: Response) => {
   }
 };
 
+// GET SINGLE REFERRAL
 export const getReferralById = async (req: AuthRequest, res: Response) => {
   try {
     const id = Number(req.params.id);
@@ -126,6 +136,7 @@ export const getReferralById = async (req: AuthRequest, res: Response) => {
   }
 };
 
+// UPDATE REFERRAL STATUS
 export const updateReferralStatus = async (req: AuthRequest, res: Response) => {
   try {
     const id = Number(req.params.id);
@@ -164,5 +175,45 @@ export const updateReferralStatus = async (req: AuthRequest, res: Response) => {
     res.status(200).json(referral);
   } catch (error) {
     res.status(500).json({ message: 'Failed to update status', error });
+  }
+};
+
+// GET REPORT — filtered by role
+export const getReferralReport = async (req: AuthRequest, res: Response) => {
+  try {
+    const requestingUser = req.user;
+    let referrals;
+
+    if (!requestingUser) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+
+    if (requestingUser.role === 'REFERRAL_OFFICER') {
+      // only their own referrals
+      referrals = await Referral.findAll({
+        where: { createdBy: requestingUser.facility },
+        order: [['createdAt', 'DESC']],
+      });
+    } else if (requestingUser.role === 'FACILITY_ADMIN') {
+      // their facility referrals
+      referrals = await Referral.findAll({
+        where: {
+          [Op.or]: [
+            { referringFacility: requestingUser.facility },
+            { receivingFacility: requestingUser.facility },
+          ],
+        },
+        order: [['createdAt', 'DESC']],
+      });
+    } else {
+      // ADMIN and DEVELOPER see everything
+      referrals = await Referral.findAll({
+        order: [['createdAt', 'DESC']],
+      });
+    }
+
+    return res.status(200).json(referrals);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch report', error });
   }
 };
